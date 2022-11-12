@@ -17,9 +17,8 @@ fun main(args: Array<String>) {
     }
 
     val client = Client("127.0.0.1", 12345)
-    val file = File(filename)
 
-    client.sendFile(FileInputStream(file))
+    client.sendFile(filename)
     client.close()
 
     /*val prop_file = File("server.properties")

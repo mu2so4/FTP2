@@ -11,6 +11,7 @@ import kotlin.io.path.fileSize
 
 private const val FILENAME_SIZE_MAX = 4096
 private const val FILE_SIZE_MAX = 1024L * 1024 * 1024 * 1024
+
 class Client(destAddress: String, port: Int): Closeable {
     private val socket = Socket(destAddress, port)
 
@@ -34,14 +35,21 @@ class Client(destAddress: String, port: Int): Closeable {
         val byteFilenameSize = ByteBuffer.allocate(2).
             putShort(filenameSize.toShort()).array()
         val byteFileSize = ByteBuffer.allocate(8).
-        putLong(fileSize).array()
+            putLong(fileSize).array()
 
         outputStream.write(byteFilenameSize)
         outputStream.write(byteFileSize)
         outputStream.write(filename.toByteArray())
         fileStream.transferTo(socket.getOutputStream())
-
         fileStream.close()
+
+        val inputStream = socket.getInputStream()
+        val byteResponseSize = ByteArray(4)
+        inputStream.read(byteResponseSize)
+        val responseSize = ByteBuffer.wrap(byteResponseSize).int
+        val byteResponse = ByteArray(responseSize)
+        inputStream.read(byteResponse)
+        println(byteResponse.toString(Charsets.UTF_8))
     }
 
     override fun close() {

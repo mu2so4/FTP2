@@ -12,7 +12,8 @@ private const val UPLOAD_DIR_NAME = "uploads"
 private const val OK_RESPONSE = "File uploaded successfully"
 private const val ERR_RESPONSE = "Failed to upload file"
 private const val SO_TIMEOUT = 1000
-private const val BUF_SIZE = 1024
+private const val BUF_SIZE = 8192
+private const val SPEED_MEASURE_INTERVAL = 3000
 
 class Server(port: Int, backlog: Int = 50): AutoCloseable {
     private val socketServer = ServerSocket(port, backlog)
@@ -50,13 +51,15 @@ class Server(port: Int, backlog: Int = 50): AutoCloseable {
         val fileStream = FileOutputStream(file)
         var receivedByteCount = 0L
         val buffer = ByteArray(BUF_SIZE)
+        val startTime = System.currentTimeMillis()
+        var lastMeasuredTime = startTime
         while(receivedByteCount < fileSize) {
+            val iterationStart = System.currentTimeMillis()
+            val read: Int
             try {
-                val read = inputStream.read(
-                    buffer, 0, min(
-                        fileSize - receivedByteCount,
-                        BUF_SIZE.toLong()
-                    ).toInt()
+                read = inputStream.read(
+                    buffer, 0, min(fileSize - receivedByteCount,
+                        BUF_SIZE.toLong()).toInt()
                 )
                 fileStream.write(buffer, 0, read)
                 receivedByteCount += read
@@ -64,7 +67,16 @@ class Server(port: Int, backlog: Int = 50): AutoCloseable {
             catch(e: SocketTimeoutException) {
                 break
             }
+            val currentTime = System.currentTimeMillis()
+            if(currentTime - lastMeasuredTime >= SPEED_MEASURE_INTERVAL) {
+                println("progress: ${receivedByteCount * 100 / fileSize}%,\t" +
+                        "av: ${receivedByteCount / (currentTime - startTime)} bps,\t" +
+                        "current: ${read / (currentTime - iterationStart)} bps")
+                lastMeasuredTime = currentTime
+            }
         }
+        val allTime =  System.currentTimeMillis() - startTime
+        println("TOTAL: av: ${receivedByteCount / allTime} bps")
         fileStream.close()
 
         val outputStream = clients[clientID].getOutputStream()

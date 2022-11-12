@@ -1,5 +1,7 @@
 package org.mu2so4.lab2.server
 
+import java.io.File
+import java.io.FileOutputStream
 import java.net.ServerSocket
 import java.net.Socket
 
@@ -9,10 +11,11 @@ class Server(port: Int, backlog: Int = 50): AutoCloseable {
 
     fun accept(): Boolean = clients.add(socketServer.accept())
 
-    fun receiveFile(): ByteArray {
-        val buf = ByteArray(100)
-        clients[0].getInputStream().read(buf)
-        return buf
+    fun receiveFile() {
+        val fileOutput = FileOutputStream(File("out.txt"))
+        val inputStream = clients[0].getInputStream()
+        inputStream.transferTo(fileOutput)
+
     }
 
     override fun close() {

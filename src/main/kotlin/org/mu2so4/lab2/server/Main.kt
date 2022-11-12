@@ -6,7 +6,7 @@ fun main() {
     server.accept()
     val charset = Charsets.UTF_8
     val subFile = server.receiveFile()
-    println(subFile.toString(charset))
+    //println(subFile.toString(charset))
 
     server.close()
 }

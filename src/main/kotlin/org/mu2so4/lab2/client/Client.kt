@@ -16,8 +16,8 @@ class Client(destAddress: String, port: Int): Closeable {
 
     fun sendFile(name: String) {
         val file = File(name)
-        val filename = file.name
-        val filenameSize = filename.length
+        val filename = file.name.toByteArray(Charsets.UTF_8)
+        val filenameSize = filename.size
 
         if(filenameSize > FILENAME_SIZE_MAX) {
             throw IllegalArgumentException("filename is too long")
@@ -35,7 +35,7 @@ class Client(destAddress: String, port: Int): Closeable {
             putShort(filenameSize.toShort()).putLong(fileSize).array()
 
         outputStream.write(byteSizes)
-        outputStream.write(filename.toByteArray())
+        outputStream.write(filename)
         fileStream.transferTo(socket.getOutputStream())
         fileStream.close()
 

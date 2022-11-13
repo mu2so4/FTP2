@@ -1,19 +1,17 @@
 package org.mu2so4.lab2.client
 
-import java.io.Closeable
 import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
-import java.lang.IllegalArgumentException
 import java.net.Socket
 import java.nio.ByteBuffer
+import java.security.MessageDigest
 import kotlin.io.path.fileSize
 
 private const val FILENAME_SIZE_MAX = 4096
 private const val FILE_SIZE_MAX = 1024L * 1024 * 1024 * 1024
 
-class Client(destAddress: String, port: Int): Closeable {
-    private val socket = Socket(destAddress, port)
+class Client(private val destAddress: String, private val port: Int) {
 
     fun sendFile(name: String) {
         val file = File(name)
@@ -29,16 +27,22 @@ class Client(destAddress: String, port: Int): Closeable {
             throw IllegalArgumentException("file is too large")
         }
 
-        val fileStream = FileInputStream(file)
-        val outputStream = socket.getOutputStream()
+        val checksumStream = FileInputStream(file)
+        val digest = MessageDigest.getInstance("SHA-1")
+        val checksum = digest.digest(checksumStream.readAllBytes())
+        checksumStream.close()
 
+        val fileStream = FileInputStream(file)
         val byteSizes = ByteBuffer.allocate(10).
             putShort(filenameSize.toShort()).putLong(fileSize).array()
 
+        val socket = Socket(destAddress, port)
+        val outputStream = socket.getOutputStream()
         outputStream.write(byteSizes)
+        outputStream.write(checksum)
         outputStream.write(filename)
         try {
-            fileStream.transferTo(socket.getOutputStream())
+            fileStream.transferTo(outputStream)
         }
         catch(e: IOException) {
             println(e.message)
@@ -55,9 +59,5 @@ class Client(destAddress: String, port: Int): Closeable {
         val byteResponse = ByteArray(responseSize)
         inputStream.read(byteResponse)
         println(byteResponse.toString(Charsets.UTF_8))
-    }
-
-    override fun close() {
-        socket.close()
     }
 }

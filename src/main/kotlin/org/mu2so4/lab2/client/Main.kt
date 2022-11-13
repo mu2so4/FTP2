@@ -26,5 +26,4 @@ fun main(args: Array<String>) {
     val client = Client(address, port)
 
     client.sendFile(filename)
-    client.close()
 }

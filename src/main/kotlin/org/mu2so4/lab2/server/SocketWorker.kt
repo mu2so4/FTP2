@@ -1,12 +1,14 @@
 package org.mu2so4.lab2.server
 
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
 import java.net.Socket
 import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.nio.ByteBuffer
+import java.security.MessageDigest
 
 private const val UPLOAD_DIR_NAME = "uploads"
 private const val OK_RESPONSE = "File uploaded successfully"
@@ -33,6 +35,9 @@ class SocketWorker(private val clientSocket: Socket, private val id: Int):
         val wrap = ByteBuffer.wrap(fileHeader)
         val fileNameSize = wrap.short
         val fileSize = wrap.long
+
+        val actualChecksum = ByteArray(20)
+        inputStream.read(actualChecksum)
 
         logger.info("JOB ID $id, filename size: $fileNameSize, " +
                 "file size: $fileSize")
@@ -83,9 +88,15 @@ class SocketWorker(private val clientSocket: Socket, private val id: Int):
             avSpeed))
         fileStream.close()
 
+        val checksumStream = FileInputStream(file)
+        val digest = MessageDigest.getInstance("SHA-1")
+        val checksum = digest.digest(checksumStream.readAllBytes())
+        checksumStream.close()
+
         val response: String
         val status: String
-        if(receivedByteCount == fileSize) {
+        val check = actualChecksum contentEquals checksum
+        if(receivedByteCount == fileSize && check) {
             response = OK_RESPONSE
             status = "finished"
         } else {

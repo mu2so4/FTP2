@@ -33,7 +33,7 @@ class SocketWorker(private val clientSocket: Socket, private val id: Int):
         val fileNameSize = wrap.short
         val fileSize = wrap.long
 
-        println("JOB ID $id started, filename size: $fileNameSize," +
+        logger.info("JOB ID $id, filename size: $fileNameSize, " +
                 "file size: $fileSize")
         val byteFileName = ByteArray(fileNameSize.toInt())
         inputStream.read(byteFileName)
@@ -43,7 +43,7 @@ class SocketWorker(private val clientSocket: Socket, private val id: Int):
             file.createNewFile()
         }
         catch(e: IOException) {
-            println("JOB ID $id: ${e.message}. Used standard name")
+            logger.info("JOB ID $id: ${e.message}. Used standard name")
             file = File("$UPLOAD_DIR_NAME/id$id")
         }
 
@@ -67,14 +67,15 @@ class SocketWorker(private val clientSocket: Socket, private val id: Int):
             }
             val currentTime = System.currentTimeMillis()
             if(currentTime - lastMeasuredTime >= SPEED_MEASURE_INTERVAL) {
-                println("JOB ID $id,\tprogress: ${receivedByteCount * 100 / fileSize}%,\t" +
-                        "av: ${receivedByteCount / (currentTime - startTime)} bps,\t" +
-                        "current: ${read / (currentTime - iterationStart)} bps")
+                logger.info("JOB ID $id,\tprogress: ${receivedByteCount *
+                        100 / fileSize}%,\tav: ${receivedByteCount /
+                        (currentTime - startTime)} bps,\tcurrent: ${read /
+                        (currentTime - iterationStart)} bps")
                 lastMeasuredTime = currentTime
             }
         }
         val allTime =  System.currentTimeMillis() - startTime
-        println("JOB ID $id,\tTOTAL: av: ${receivedByteCount / allTime} bps")
+        logger.info("JOB ID $id,\tTOTAL: av: ${receivedByteCount / allTime} bps")
         fileStream.close()
 
         val outputStream = clientSocket.getOutputStream()
@@ -90,6 +91,6 @@ class SocketWorker(private val clientSocket: Socket, private val id: Int):
         outputStream.write(response.toByteArray())
 
         clientSocket.close()
-        println("JOB ID $id completed")
+        logger.info("JOB ID $id finished")
     }
 }

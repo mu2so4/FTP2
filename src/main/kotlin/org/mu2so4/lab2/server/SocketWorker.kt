@@ -11,7 +11,7 @@ private const val UPLOAD_DIR_NAME = "uploads"
 private const val OK_RESPONSE = "File uploaded successfully"
 private const val ERR_RESPONSE = "Failed to upload file"
 private const val BUF_SIZE = 8192
-private const val SPEED_MEASURE_INTERVAL = 3000
+private const val SPEED_MEASURE_INTERVAL_NANOS = 3000000000L
 
 class SocketWorker(private val clientSocket: Socket, private val id: Int):
     Runnable {
@@ -50,10 +50,10 @@ class SocketWorker(private val clientSocket: Socket, private val id: Int):
         val fileStream = FileOutputStream(file)
         var receivedByteCount = 0L
         val buffer = ByteArray(BUF_SIZE)
-        val startTime = System.currentTimeMillis()
+        val startTime = System.nanoTime()
         var lastMeasuredTime = startTime
         while(receivedByteCount < fileSize) {
-            val iterationStart = System.currentTimeMillis()
+            val iterationStart = System.nanoTime()
             val read: Int
             try {
                 read = inputStream.read(buffer)
@@ -65,17 +65,21 @@ class SocketWorker(private val clientSocket: Socket, private val id: Int):
             catch(e: SocketTimeoutException) {
                 break
             }
-            val currentTime = System.currentTimeMillis()
-            if(currentTime - lastMeasuredTime >= SPEED_MEASURE_INTERVAL) {
-                logger.info("JOB ID $id,\tprogress: ${receivedByteCount *
-                        100 / fileSize}%,\tav: ${receivedByteCount /
-                        (currentTime - startTime)} bps,\tcurrent: ${read /
-                        (currentTime - iterationStart)} bps")
+            val currentTime = System.nanoTime()
+            if(currentTime - lastMeasuredTime >= SPEED_MEASURE_INTERVAL_NANOS) {
+                val progress = receivedByteCount * 100.0 / fileSize
+                val avSpeed = receivedByteCount * 1000.0 / (currentTime - startTime)
+                val currentSpeed = read * 1000.0 / (currentTime - iterationStart)
+                logger.info(String.Companion.format("JOB ID $id,\tprogress: " +
+                        "%.1f%%,\tav: %.2f Mbps,\tcurrent: %.2f Mbps",
+                        progress, avSpeed, currentSpeed))
                 lastMeasuredTime = currentTime
             }
         }
-        val allTime =  System.currentTimeMillis() - startTime
-        logger.info("JOB ID $id,\tTOTAL: av: ${receivedByteCount / allTime} bps")
+        val allTime = System.nanoTime() - startTime
+        val avSpeed = receivedByteCount * 1000.0 / allTime
+        logger.info(String.Companion.format("JOB ID $id,\tTOTAL: av: %.2f Mbps",
+            avSpeed))
         fileStream.close()
 
         val outputStream = clientSocket.getOutputStream()

@@ -4,6 +4,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.net.Socket
+import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.nio.ByteBuffer
 
@@ -57,7 +58,7 @@ class SocketWorker(private val clientSocket: Socket, private val id: Int):
             val read: Int
             try {
                 read = inputStream.read(buffer)
-                if(read == 0)
+                if(read <= 0)
                     break
                 fileStream.write(buffer, 0, read)
                 receivedByteCount += read
@@ -83,18 +84,27 @@ class SocketWorker(private val clientSocket: Socket, private val id: Int):
         fileStream.close()
 
         val outputStream = clientSocket.getOutputStream()
-        val response = if(receivedByteCount == fileSize) {
-            OK_RESPONSE
+        val response: String
+        val status: String
+        if(receivedByteCount == fileSize) {
+            response = OK_RESPONSE
+            status = "finished"
         } else {
-            ERR_RESPONSE
+            response = ERR_RESPONSE
+            status = "failed"
         }
 
         val responseSize = ByteBuffer.allocate(4).
         putInt(response.length).array()
-        outputStream.write(responseSize)
-        outputStream.write(response.toByteArray())
+        try {
+            outputStream.write(responseSize)
+            outputStream.write(response.toByteArray())
+        }
+        catch(e: SocketException) {
+            logger.info("JOB ID $id, ${e.message}")
+        }
 
         clientSocket.close()
-        logger.info("JOB ID $id finished")
+        logger.info("JOB ID $id $status")
     }
 }

@@ -1,9 +1,8 @@
 package org.mu2so4.lab2.client
 
-import java.io.File
-import java.io.FileInputStream
-import java.util.*
-import kotlin.system.exitProcess
+import org.mu2so4.lab2.server.Server
+import java.util.Scanner
+import java.util.Properties
 
 fun main(args: Array<String>) {
     val filename: String
@@ -16,7 +15,15 @@ fun main(args: Array<String>) {
         filename = args[1]
     }
 
-    val client = Client("127.0.0.1", 12345)
+    val resource = Server::class.java.classLoader.
+        getResourceAsStream("server.properties")
+    val properties = Properties()
+    properties.load(resource)
+
+    val address = properties.getProperty("address") ?: "127.0.0.1"
+    val port = properties.getProperty("port")?.toInt() ?: 12345
+
+    val client = Client(address, port)
 
     client.sendFile(filename)
     client.close()

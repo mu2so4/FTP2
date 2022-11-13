@@ -8,7 +8,6 @@ import java.net.Socket
 import java.nio.ByteBuffer
 import kotlin.io.path.fileSize
 
-
 private const val FILENAME_SIZE_MAX = 4096
 private const val FILE_SIZE_MAX = 1024L * 1024 * 1024 * 1024
 

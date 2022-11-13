@@ -32,13 +32,10 @@ class Client(destAddress: String, port: Int): Closeable {
         val fileStream = FileInputStream(file)
         val outputStream = socket.getOutputStream()
 
-        val byteFilenameSize = ByteBuffer.allocate(2).
-            putShort(filenameSize.toShort()).array()
-        val byteFileSize = ByteBuffer.allocate(8).
-            putLong(fileSize).array()
+        val byteSizes = ByteBuffer.allocate(10).
+            putShort(filenameSize.toShort()).putLong(fileSize).array()
 
-        outputStream.write(byteFilenameSize)
-        outputStream.write(byteFileSize)
+        outputStream.write(byteSizes)
         outputStream.write(filename.toByteArray())
         fileStream.transferTo(socket.getOutputStream())
         fileStream.close()

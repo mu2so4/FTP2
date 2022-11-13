@@ -9,7 +9,7 @@ fun main(args: Array<String>) {
     val filename: String
     if(args.size != 2) {
         val scanner = Scanner(System.`in`)
-        filename = scanner.next()
+        filename = scanner.nextLine()
         scanner.close()
     }
     else {

@@ -83,7 +83,6 @@ class SocketWorker(private val clientSocket: Socket, private val id: Int):
             avSpeed))
         fileStream.close()
 
-        val outputStream = clientSocket.getOutputStream()
         val response: String
         val status: String
         if(receivedByteCount == fileSize) {
@@ -92,8 +91,10 @@ class SocketWorker(private val clientSocket: Socket, private val id: Int):
         } else {
             response = ERR_RESPONSE
             status = "failed"
+            file.delete()
         }
 
+        val outputStream = clientSocket.getOutputStream()
         val responseSize = ByteBuffer.allocate(4).
         putInt(response.length).array()
         try {

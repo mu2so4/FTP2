@@ -27,17 +27,4 @@ fun main(args: Array<String>) {
 
     client.sendFile(filename)
     client.close()
-
-    /*val prop_file = File("server.properties")
-
-    val props  = Client::class.classLoader.getResourceAsStream("pairs_ids.txt").use {
-        Properties().apply { load(it) }
-    }
-    FileInputStream(prop_file).use { props.load(it) }
-
-    println("port: ${props.getProperty("port")}")*/
-
-
-
-    //println()
 }

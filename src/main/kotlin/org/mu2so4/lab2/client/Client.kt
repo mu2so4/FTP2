@@ -3,6 +3,7 @@ package org.mu2so4.lab2.client
 import java.io.Closeable
 import java.io.File
 import java.io.FileInputStream
+import java.io.IOException
 import java.lang.IllegalArgumentException
 import java.net.Socket
 import java.nio.ByteBuffer
@@ -36,7 +37,15 @@ class Client(destAddress: String, port: Int): Closeable {
 
         outputStream.write(byteSizes)
         outputStream.write(filename)
-        fileStream.transferTo(socket.getOutputStream())
+        try {
+            fileStream.transferTo(socket.getOutputStream())
+        }
+        catch(e: IOException) {
+            println(e.message)
+            println("Connection closed")
+            fileStream.close()
+            return
+        }
         fileStream.close()
 
         val inputStream = socket.getInputStream()

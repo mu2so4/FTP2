@@ -33,6 +33,8 @@ class SocketWorker(private val clientSocket: Socket, private val id: Int):
         val fileNameSize = wrap.short
         val fileSize = wrap.long
 
+        println("JOB ID $id started, filename size: $fileNameSize," +
+                "file size: $fileSize")
         val byteFileName = ByteArray(fileNameSize.toInt())
         inputStream.read(byteFileName)
         val fullFile = File(byteFileName.toString(Charsets.UTF_8))
@@ -54,12 +56,9 @@ class SocketWorker(private val clientSocket: Socket, private val id: Int):
             val iterationStart = System.currentTimeMillis()
             val read: Int
             try {
-                read = inputStream.read(
-                    buffer, 0, minOf(
-                        fileSize - receivedByteCount,
-                        BUF_SIZE.toLong()
-                    ).toInt()
-                )
+                read = inputStream.read(buffer)
+                if(read == 0)
+                    break
                 fileStream.write(buffer, 0, read)
                 receivedByteCount += read
             }
@@ -68,14 +67,14 @@ class SocketWorker(private val clientSocket: Socket, private val id: Int):
             }
             val currentTime = System.currentTimeMillis()
             if(currentTime - lastMeasuredTime >= SPEED_MEASURE_INTERVAL) {
-                println("JOB ID: $id,\tprogress: ${receivedByteCount * 100 / fileSize}%,\t" +
+                println("JOB ID $id,\tprogress: ${receivedByteCount * 100 / fileSize}%,\t" +
                         "av: ${receivedByteCount / (currentTime - startTime)} bps,\t" +
                         "current: ${read / (currentTime - iterationStart)} bps")
                 lastMeasuredTime = currentTime
             }
         }
         val allTime =  System.currentTimeMillis() - startTime
-        println("JOB ID: $id,\tTOTAL: av: ${receivedByteCount / allTime} bps")
+        println("JOB ID $id,\tTOTAL: av: ${receivedByteCount / allTime} bps")
         fileStream.close()
 
         val outputStream = clientSocket.getOutputStream()
@@ -91,5 +90,6 @@ class SocketWorker(private val clientSocket: Socket, private val id: Int):
         outputStream.write(response.toByteArray())
 
         clientSocket.close()
+        println("JOB ID $id completed")
     }
 }
